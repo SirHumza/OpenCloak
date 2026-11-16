@@ -43,7 +43,7 @@ The app lives primarily in the menu bar. Selecting it opens a native main window
 
 Overview shows vault lock/mount state, active privacy rules, and the last local security-relevant actions. Vaults supports create, unlock, lock/eject, reveal in Finder, import, export, and recovery guidance. Apps and Websites show explicit rule state and macOS permissions needed. Settings controls relock behavior, authentication fallback, and local event-history retention.
 
-Every destructive or ambiguous operation explains its result before proceeding. Cancellation leaves the prior state intact. A busy vault cannot be forcibly detached by default; the app explains which process or open-file condition prevents safe ejection and offers retry. There is no fake-crash mode or covert camera capture in the baseline release.
+Every destructive or ambiguous operation explains its result before proceeding. Cancellation leaves the prior state intact. A busy vault cannot be forcibly detached by default; the app reports that it is busy and offers retry. It identifies the blocking process only when macOS provides reliable evidence. There is no fake-crash mode or covert camera capture in the baseline release.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ The policy layer is the only owner of persisted app/site rules and relock state.
 
 Use Apple's encrypted sparse disk-image format as the initial vault container rather than inventing a cryptographic format. Validate the chosen format against macOS 13 and current macOS before committing to it. A vault is either locked, unlocking, mounted, locking, or in an error/recovery state; transitions are persisted only after confirmed operating-system results.
 
-Generate a high-entropy vault password with the system cryptographic random generator. Store it only in Keychain, protected by the user's selected authentication policy. Touch ID gates secret retrieval; it is not itself the encryption key. Offer an explicit recovery secret during creation. Display it once, require the user to confirm they saved it, and never silently upload or persist it in plaintext. Clearly explain that losing both the Mac's Keychain access and recovery secret makes the vault unrecoverable.
+Generate a high-entropy vault password with the system cryptographic random generator. Store it only in Keychain, protected by the user's selected authentication policy. Touch ID gates secret retrieval; it is not itself the encryption key. Offer an explicit recovery secret during creation. It must independently recover the vault credential if Keychain access is lost, not merely duplicate the Keychain item. Display it once, require the user to confirm they saved it, and never silently upload or persist it in plaintext. Clearly explain that losing both the Mac's Keychain access and recovery secret makes the vault unrecoverable. The implementation plan must choose and validate a safe recovery construction compatible with the selected encrypted disk-image API before vault creation ships.
 
 Creation uses a temporary destination and atomic rename after successful creation and validation. Import never overwrites an existing vault. Export writes to a new user-selected destination, verifies completion, and preserves the original. Failed, cancelled, or interrupted operations clean up only files created by that operation. Never delete or replace the source as part of import/export.
 
