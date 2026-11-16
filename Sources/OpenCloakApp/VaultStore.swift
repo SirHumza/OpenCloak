@@ -1,10 +1,10 @@
 import AppKit
 import Foundation
-import NopalCore
+import OpenCloakCore
 
 extension Notification.Name {
-    static let nopalVaultsChanged = Notification.Name("app.nopal.vaultsChanged")
-    static let nopalRulesChanged = Notification.Name("app.nopal.rulesChanged")
+    static let opencloakVaultsChanged = Notification.Name("app.opencloak.vaultsChanged")
+    static let opencloakRulesChanged = Notification.Name("app.opencloak.rulesChanged")
 }
 
 struct CredentialPrompt: Identifiable {
@@ -85,7 +85,7 @@ final class VaultStore: ObservableObject {
         self.service = service
         self.activity = activity
         refresh()
-        vaultsObserver = NotificationCenter.default.addObserver(forName: .nopalVaultsChanged,
+        vaultsObserver = NotificationCenter.default.addObserver(forName: .opencloakVaultsChanged,
                                                                 object: nil,
                                                                 queue: .main) { [weak self] _ in
             guard let owner = self else { return }

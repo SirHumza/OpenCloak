@@ -1,8 +1,8 @@
-# Nopal: Native Mac Privacy App Design
+# OpenCloak: Native Mac Privacy App Design
 
 ## Product brief
 
-Nopal is an English-only, open-source macOS privacy app inspired by the workflows and compact visual language of Cloak. It will provide a polished menu-bar utility and main window for managing encrypted file vaults and privacy rules. Nopal will use original branding, copy, artwork, and implementation.
+OpenCloak is an English-only, open-source macOS privacy app inspired by the workflows and compact visual language of Cloak. It will provide a polished menu-bar utility and main window for managing encrypted file vaults and privacy rules. OpenCloak will use original branding, copy, artwork, and implementation.
 
 The project prioritizes security, reliability, privacy, recovery, performance, and native macOS integration. It runs locally without an account, analytics, or network dependency. Its security claims must match the guarantees macOS actually provides.
 
@@ -32,14 +32,14 @@ Success means a new user can create and verify a vault, understand whether it is
 
 - Native Swift application using SwiftUI and AppKit where needed.
 - Universal Apple silicon and Intel build.
-- Deployment target: macOS 13 Ventura.
-- Test on macOS 13 and the latest public macOS release available at release time.
+- Deployment target: macOS 12 Monterey. This draft originally proposed macOS 13; the implemented UI uses no Ventura-only SwiftUI, so the target was lowered to widen hardware coverage.
+- Test on macOS 12 and the latest public macOS release available at release time.
 - English UI only for the initial release.
 - Xcode project and command-line build/test instructions; no third-party runtime dependencies unless a reviewed security or reliability need justifies one.
 
 ## User experience
 
-The app lives primarily in the menu bar. Selecting it opens a native main window with a sidebar for **Overview**, **Vaults**, **Apps**, **Websites**, and **Settings**. The interface follows familiar privacy-app patterns: a compact navigation rail, clear state labels, prominent add controls, and focused detail panes. The visual identity and all assets are original to Nopal.
+The app lives primarily in the menu bar. Selecting it opens a native main window with a sidebar for **Overview**, **Vaults**, **Apps**, **Websites**, and **Settings**. The interface follows familiar privacy-app patterns: a compact navigation rail, clear state labels, prominent add controls, and focused detail panes. The visual identity and all assets are original to OpenCloak.
 
 Overview shows vault lock/mount state, active privacy rules, and the last local security-relevant actions. Vaults supports create, unlock, lock/eject, reveal in Finder, import, export, and recovery guidance. Apps and Websites show explicit rule state and macOS permissions needed. Settings controls relock behavior, authentication fallback, and local event-history retention.
 
@@ -53,7 +53,7 @@ The policy layer is the only owner of persisted app/site rules and relock state.
 
 ## Vault security and data integrity
 
-Use Apple's encrypted sparse disk-image format as the initial vault container rather than inventing a cryptographic format. Validate the chosen format against macOS 13 and current macOS before committing to it. A vault is either locked, unlocking, mounted, locking, or in an error/recovery state; transitions are persisted only after confirmed operating-system results.
+Use Apple's encrypted sparse disk-image format as the initial vault container rather than inventing a cryptographic format. Validate the chosen format against macOS 12 and current macOS before committing to it. A vault is either locked, unlocking, mounted, locking, or in an error/recovery state; transitions are persisted only after confirmed operating-system results.
 
 Generate a high-entropy vault password with the system cryptographic random generator. Store it only in Keychain, protected by the user's selected authentication policy. Touch ID gates secret retrieval; it is not itself the encryption key. Offer an explicit recovery secret during creation. It must independently recover the vault credential if Keychain access is lost, not merely duplicate the Keychain item. Display it once, require the user to confirm they saved it, and never silently upload or persist it in plaintext. Clearly explain that losing both the Mac's Keychain access and recovery secret makes the vault unrecoverable. The implementation plan must choose and validate a safe recovery construction compatible with the selected encrypted disk-image API before vault creation ships.
 
@@ -88,7 +88,7 @@ The repository includes `LICENSE` (MIT), `README.md`, `SECURITY.md`, `CONTRIBUTI
 
 ## Validation requirements
 
-Before release, verify build and tests on macOS 13 and current macOS, on Apple silicon and Intel where hardware is available. Test vault creation, reopen, mount, unmount, recovery, backup restore, duplicate names, cancellation at every safe boundary, disk-full handling, busy files, process termination, sleep/wake, screen lock, Keychain denial, authentication cancellation, and forced app termination. Confirm secrets do not appear in process arguments, logs, temporary files, or crash output. Test app/site privacy rules against background apps, alternate launch paths, permission denial, private browser windows, and browser updates; publish all observed limits.
+Before release, verify build and tests on macOS 12 and current macOS, on Apple silicon and Intel where hardware is available. Test vault creation, reopen, mount, unmount, recovery, backup restore, duplicate names, cancellation at every safe boundary, disk-full handling, busy files, process termination, sleep/wake, screen lock, Keychain denial, authentication cancellation, and forced app termination. Confirm secrets do not appear in process arguments, logs, temporary files, or crash output. Test app/site privacy rules against background apps, alternate launch paths, permission denial, private browser windows, and browser updates; publish all observed limits.
 
 ## Delivery sequence
 

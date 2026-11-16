@@ -2,15 +2,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "Nopal",
-    platforms: [.macOS(.v13)],
+    name: "OpenCloak",
+    platforms: [.macOS(.v12)],
     products: [
-        .library(name: "NopalCore", targets: ["NopalCore"]),
-        .executable(name: "Nopal", targets: ["NopalApp"])
+        .library(name: "OpenCloakCore", targets: ["OpenCloakCore"]),
+        .executable(name: "OpenCloak", targets: ["OpenCloakApp"])
     ],
     targets: [
-        .target(name: "NopalCore"),
-        .executableTarget(name: "NopalApp", dependencies: ["NopalCore"]),
-        .executableTarget(name: "NopalTests", dependencies: ["NopalCore"], path: "Tests/NopalTests")
+        .target(name: "OpenCloakCore"),
+        .executableTarget(name: "OpenCloakApp", dependencies: ["OpenCloakCore"]),
+        .executableTarget(name: "OpenCloakTests", dependencies: ["OpenCloakCore"], path: "Tests/OpenCloakTests")
     ]
 )

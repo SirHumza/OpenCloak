@@ -32,7 +32,7 @@ public enum EventLogError: LocalizedError {
     case persistence
 
     public var errorDescription: String? {
-        "Nopal could not update the local activity history."
+        "OpenCloak could not update the local activity history."
     }
 }
 
@@ -48,7 +48,7 @@ public final class EventLog {
 
     public init(fileURL: URL? = nil) {
         self.fileURL = fileURL ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Nopal/events.json")
+            .appendingPathComponent("OpenCloak/events.json")
     }
 
     public func all() throws -> [EventRecord] {

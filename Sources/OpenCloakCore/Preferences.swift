@@ -32,7 +32,7 @@ public struct PreferenceValues: Codable, Equatable {
 }
 
 /// Typed access to the local preferences shared by the app and the privacy coordinator.
-public struct NopalPreferences {
+public struct OpenCloakPreferences {
     public enum Key {
         public static let idleLockMinutes = "idleLockMinutes"
         public static let lockOnSleep = "lockOnSleep"

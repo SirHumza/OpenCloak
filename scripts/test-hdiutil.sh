@@ -36,12 +36,12 @@ def attach(image, password, read_only=False):
 
 
 for cycle in range(8):
-    with tempfile.TemporaryDirectory(prefix="nopal-hdiutil-") as directory:
+    with tempfile.TemporaryDirectory(prefix="opencloak-hdiutil-") as directory:
         image = os.path.join(directory, "test.sparsebundle")
         password = secrets.token_hex(32).encode("ascii")
         run([
             "create", "-type", "SPARSEBUNDLE", "-fs", "APFS", "-size", "64m",
-            "-encryption", "AES-256", "-stdinpass", "-volname", "NopalStress", "-o", image,
+            "-encryption", "AES-256", "-stdinpass", "-volname", "OpenCloakStress", "-o", image,
         ], password)
         mount, device = attach(image, password)
         with open(os.path.join(mount, "integrity-check.txt"), "w", encoding="utf-8") as handle:

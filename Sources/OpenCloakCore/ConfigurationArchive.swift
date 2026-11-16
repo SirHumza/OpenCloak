@@ -20,7 +20,7 @@ public enum ConfigurationArchiveError: LocalizedError {
     case write
 
     public var errorDescription: String? {
-        "Nopal could not write the configuration file."
+        "OpenCloak could not write the configuration file."
     }
 }
 

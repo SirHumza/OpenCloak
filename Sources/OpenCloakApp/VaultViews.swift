@@ -1,5 +1,5 @@
 import AppKit
-import NopalCore
+import OpenCloakCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -23,7 +23,7 @@ struct OverviewView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Everything stays on this Mac", systemImage: "checkmark.shield.fill")
                             .font(.headline)
-                        Text("Nopal has no account, telemetry, analytics, or network requirement. A vault's contents are protected while it is locked. A mounted vault stays readable until you eject it.")
+                        Text("OpenCloak has no account, telemetry, analytics, or network requirement. A vault's contents are protected while it is locked. A mounted vault stays readable until you eject it.")
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -56,7 +56,7 @@ struct OverviewView: View {
 
                 GroupBox {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("What Nopal does not do", systemImage: "exclamationmark.shield")
+                        Label("What OpenCloak does not do", systemImage: "exclamationmark.shield")
                             .font(.headline)
                         Text("Privacy screens cover the screen after macOS reports an app activation or a matching page in a supported browser. They do not stop apps or their background helpers from running, and they cannot protect against an administrator, malware running as you, or someone using a Mac that is already unlocked.")
                             .foregroundStyle(.secondary)
@@ -88,7 +88,7 @@ struct VaultsView: View {
                         Label("New vault", systemImage: "plus")
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Color.nopalAccent)
+                    .tint(Color.opencloakAccent)
 
                     Button {
                         chooseImportSource()
@@ -100,11 +100,11 @@ struct VaultsView: View {
                 if vaults.items.isEmpty {
                     EmptyStateView(title: "No vaults yet",
                                    symbol: "lock.shield",
-                                   detail: "Create an encrypted vault on this Mac, or import a copy of an existing Nopal sparse bundle.")
+                                   detail: "Create an encrypted vault on this Mac, or import a copy of an existing OpenCloak sparse bundle.")
                     HStack(spacing: 12) {
                         Button("Create your first vault") { showingCreate = true }
                             .buttonStyle(.borderedProminent)
-                            .tint(Color.nopalAccent)
+                            .tint(Color.opencloakAccent)
                         Button("Import a vault…") { chooseImportSource() }
                     }
                 } else {
@@ -118,7 +118,7 @@ struct VaultsView: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary))
 
                     GroupBox {
-                        Label("A mounted vault stays accessible until it is ejected. Nopal never claims a vault is protected while it is mounted.",
+                        Label("A mounted vault stays accessible until it is ejected. OpenCloak never claims a vault is protected while it is mounted.",
                               systemImage: "info.circle")
                             .foregroundStyle(.secondary)
                     }
@@ -168,7 +168,7 @@ private struct VaultRow: View {
         HStack(spacing: 14) {
             Image(systemName: symbol)
                 .font(.title2)
-                .foregroundStyle(Color.nopalAccent)
+                .foregroundStyle(Color.opencloakAccent)
                 .frame(width: 42, height: 42)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityHidden(true)
@@ -252,7 +252,7 @@ private struct VaultRow: View {
 
     private var detail: String {
         if item.pending {
-            return "Interrupted setup. Nopal kept the temporary vault so nothing is lost."
+            return "Interrupted setup. OpenCloak kept the temporary vault so nothing is lost."
         }
         if item.mounted {
             return "Mounted at \(item.mountPoint?.path ?? "a volume")"
@@ -299,7 +299,7 @@ struct CreateVaultView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Create an encrypted vault").font(.title2.bold())
-            Text("Nopal uses Apple's encrypted sparse disk image format (APFS, AES-256). The vault grows as you add files, up to the maximum size you choose.")
+            Text("OpenCloak uses Apple's encrypted sparse disk image format (APFS, AES-256). The vault grows as you add files, up to the maximum size you choose.")
                 .foregroundStyle(.secondary)
 
             TextField("Vault name", text: $name)
@@ -311,7 +311,7 @@ struct CreateVaultView: View {
                 }
             }
 
-            Text("Nopal generates a 256-bit key, stores it in the macOS Keychain behind Touch ID or your Mac password, and shows it once as a recovery key.")
+            Text("OpenCloak generates a 256-bit key, stores it in the macOS Keychain behind Touch ID or your Mac password, and shows it once as a recovery key.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -346,7 +346,7 @@ struct ImportVaultView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Import a vault").font(.title2.bold())
-            Text("Nopal copies the encrypted sparse bundle into its vault folder and verifies the copy. The original is never moved, replaced, or deleted.")
+            Text("OpenCloak copies the encrypted sparse bundle into its vault folder and verifies the copy. The original is never moved, replaced, or deleted.")
                 .foregroundStyle(.secondary)
             Text(source.path)
                 .font(.caption.monospaced())
@@ -355,7 +355,7 @@ struct ImportVaultView: View {
                 .truncationMode(.middle)
             TextField("Vault name", text: $name)
                 .textFieldStyle(.roundedBorder)
-            Text("The imported vault needs its existing password the first time you unlock it. Nopal then saves that credential in the Keychain.")
+            Text("The imported vault needs its existing password the first time you unlock it. OpenCloak then saves that credential in the Keychain.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack {
@@ -386,8 +386,8 @@ struct CredentialPromptView: View {
             Text(prompt.purpose == .finish ? "Finish interrupted setup" : "Unlock \(prompt.item.name)")
                 .font(.title2.bold())
             Text(prompt.purpose == .finish
-                 ? "Enter the recovery key saved when this vault was created. Nopal verifies it by opening the temporary vault before finishing setup."
-                 : "Enter the vault password or the recovery key saved when this vault was created. Nopal verifies it before saving it in the Keychain.")
+                 ? "Enter the recovery key saved when this vault was created. OpenCloak verifies it by opening the temporary vault before finishing setup."
+                 : "Enter the vault password or the recovery key saved when this vault was created. OpenCloak verifies it before saving it in the Keychain.")
                 .foregroundStyle(.secondary)
             SecureField("Vault password or recovery key", text: $credential)
                 .textFieldStyle(.roundedBorder)
@@ -428,7 +428,7 @@ struct RecoveryKeyView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("Save your recovery key", systemImage: "key.fill").font(.title2.bold())
-            Text("This key can open your vault if the Keychain credential is lost. Nopal cannot recover it for you, and there is no second copy. Store it somewhere private and separate from this Mac.")
+            Text("This key can open your vault if the Keychain credential is lost. OpenCloak cannot recover it for you, and there is no second copy. Store it somewhere private and separate from this Mac.")
                 .foregroundStyle(.secondary)
             Text(credential)
                 .font(.system(.body, design: .monospaced))

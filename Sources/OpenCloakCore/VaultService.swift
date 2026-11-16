@@ -65,11 +65,11 @@ public enum VaultServiceError: LocalizedError, Equatable {
         case .pendingVault:
             return "An interrupted vault with this name needs to be finished before you create another."
         case .unsupportedFormat:
-            return "Choose a Nopal sparse bundle (a .sparsebundle package)."
+            return "Choose a OpenCloak sparse bundle (a .sparsebundle package)."
         case .notEncrypted:
-            return "This sparse bundle is not encrypted. Nopal only imports encrypted vaults."
+            return "This sparse bundle is not encrypted. OpenCloak only imports encrypted vaults."
         case .sourceInsideVaults:
-            return "That vault is already in Nopal's vault folder."
+            return "That vault is already in OpenCloak's vault folder."
         case .keychain(let status):
             return "The secure credential could not be stored or read (Keychain error \(status))."
         case .authenticationCancelled:
@@ -85,7 +85,7 @@ public enum VaultServiceError: LocalizedError, Equatable {
         case .destinationExists:
             return "A file with this name already exists at the destination. Choose a different folder."
         case .copyFailed:
-            return "Nopal could not verify the completed copy. The original was left unchanged."
+            return "OpenCloak could not verify the completed copy. The original was left unchanged."
         case .missingVault:
             return "The selected vault could not be found."
         case .notPending:
@@ -126,7 +126,7 @@ public final class VaultService {
         let standardError: String
     }
 
-    private static let keychainService = "app.nopal.vault"
+    private static let keychainService = "app.opencloak.vault"
     private static let ignoreSIGPIPE: Void = {
         // hdiutil may close its input before the password write finishes.
         _ = signal(SIGPIPE, SIG_IGN)
@@ -139,7 +139,7 @@ public final class VaultService {
 
     public init(root: URL? = nil) {
         self.root = root ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Nopal/Vaults", isDirectory: true)
+            .appendingPathComponent("OpenCloak/Vaults", isDirectory: true)
     }
 
     // MARK: - Listing
@@ -211,7 +211,7 @@ public final class VaultService {
         let temporaryURL = root.appendingPathComponent("\(name).pending.\(UUID().uuidString).sparsebundle", isDirectory: true)
         let credential = try Self.randomCredential()
         try Self.store(credential, account: name, allowReplacement: false,
-                       biometricOnly: NopalPreferences().values.requireBiometricOnly)
+                       biometricOnly: OpenCloakPreferences().values.requireBiometricOnly)
 
         let result: ProcessResult
         do {
@@ -257,7 +257,7 @@ public final class VaultService {
         if provided != nil {
             do {
                 try Self.store(secret, account: item.name, allowReplacement: true,
-                               biometricOnly: NopalPreferences().values.requireBiometricOnly)
+                               biometricOnly: OpenCloakPreferences().values.requireBiometricOnly)
             } catch {
                 _ = try? Self.run(arguments: ["detach", volume.device])
                 throw error
@@ -320,7 +320,7 @@ public final class VaultService {
 
         if provided != nil {
             try Self.store(secret, account: item.name, allowReplacement: true,
-                           biometricOnly: NopalPreferences().values.requireBiometricOnly)
+                           biometricOnly: OpenCloakPreferences().values.requireBiometricOnly)
         }
         do {
             try fileManager.moveItem(at: item.imageURL, to: finalURL)
@@ -402,7 +402,7 @@ public final class VaultService {
                                             attributes: [.posixPermissions: 0o700])
             try? fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
         } catch {
-            throw VaultServiceError.processFailed("Nopal could not prepare its vault folder.")
+            throw VaultServiceError.processFailed("OpenCloak could not prepare its vault folder.")
         }
     }
 
@@ -532,7 +532,7 @@ public final class VaultService {
             throw VaultServiceError.keychain(errSecParam)
         }
         let context = LAContext()
-        context.localizedReason = "Save the Nopal vault credential"
+        context.localizedReason = "Save the OpenCloak vault credential"
         var query = baseQuery(account: account)
         query[kSecValueData as String] = Data(secret.utf8)
         query[kSecAttrAccessControl as String] = access
@@ -558,7 +558,7 @@ public final class VaultService {
 
     private static func read(account: String) throws -> String {
         let context = LAContext()
-        context.localizedReason = "Unlock the Nopal vault"
+        context.localizedReason = "Unlock the OpenCloak vault"
         var query = baseQuery(account: account)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
