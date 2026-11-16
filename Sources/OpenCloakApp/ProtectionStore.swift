@@ -126,7 +126,7 @@ final class ProtectionStore: ObservableObject {
     }
 
     func changePassword(current: String, next: String, confirmation: String) {
-        guard identity.masterKey(forPassword: current) != nil else {
+        guard let masterKey = identity.masterKey(forPassword: current) else {
             errorMessage = OpenCloakCredentialError.incorrectPassword.errorDescription
             return
         }
@@ -134,14 +134,8 @@ final class ProtectionStore: ObservableObject {
             errorMessage = OpenCloakCredentialError.passwordMismatch.errorDescription
             return
         }
-        guard hiddenApps.isEmpty && lockedItems.isEmpty else {
-            // Rotating the password replaces the master key, so existing encrypted images would be
-            // orphaned. Unhide and unlock everything first.
-            errorMessage = "Unhide every hidden app and unlock every locked item before changing the password. Existing encrypted images use the current key."
-            return
-        }
         do {
-            setupRecoveryKey = try identity.setPassword(next)
+            setupRecoveryKey = try identity.setPassword(next, preservingMasterKey: masterKey)
             hasPassword = true
             credential = setupRecoveryKey
             activity.record(.privacy, .success, "Changed the OpenCloak password")
@@ -252,7 +246,12 @@ final class ProtectionStore: ObservableObject {
         lastCapture = now
         camera.capture { data in
             guard let data else { return }
-            try? self.photoStore.record(data)
+            do {
+                try self.photoStore.record(data)
+            } catch {
+                self.activity.record(.privacy, .failure, "OpenCloak could not save an intruder photo")
+                return
+            }
             self.intruderPhotos = self.photoStore.all()
             self.activity.record(.privacy, .notice, "Saved an intruder photo after a failed unlock")
         }

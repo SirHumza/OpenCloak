@@ -17,6 +17,7 @@ struct TestRunner {
         try testWebsiteMatcherStress()
         try testVaultNamingRules()
         try testPreferenceClampingAndRoundTrip()
+        try testAppearanceThemeCatalog()
         try testConfigurationExportIsCredentialFree()
         try testUnreadableHistoryIsQuarantined()
         try testEquivalentTargetsAreRecognised()
@@ -27,6 +28,7 @@ struct TestRunner {
         try testPasswordRecordRoundTrip()
         try testRecoveryKeyRoundTrip()
         try testPasswordLengthPolicy()
+        try testCorruptCredentialRecordCannotBeReplaced()
         try testLockScheduleBoundaries()
         try testLockScheduleOvernight()
         try testHiddenAppPolicyBoundaries()
@@ -35,7 +37,7 @@ struct TestRunner {
         try testFileTreeMeasurement()
         try testIntruderCapturePolicy()
         try testIntruderPhotoRetention()
-        print("32 core tests passed")
+        print("34 core tests passed")
     }
 
     static func testLockedVaultCanBeginUnlocking() throws {
@@ -155,16 +157,32 @@ struct TestRunner {
 
     static func testPreferenceClampingAndRoundTrip() throws {
         let clamped = PreferenceValues(idleLockMinutes: 5_000, eventRetentionDays: -30)
-        try expect(clamped.idleLockMinutes == 120, "clamps idle lock above maximum")
+        try expect(clamped.idleLockMinutes == 60, "clamps idle lock to the 60-minute maximum")
+        try expect(PreferenceValues(idleLockMinutes: 0).idleLockMinutes == 5,
+                   "enforces the 5-minute minimum idle-lock interval")
+        try expect(PreferenceValues.idleChoices.first == 5 && PreferenceValues.idleChoices.last == 60,
+                   "offers idle lock choices only within the 5–60 minute range")
         try expect(clamped.eventRetentionDays == 0, "clamps retention below zero")
         let suite = "app.opencloak.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = OpenCloakPreferences(defaults: defaults)
         let stored = PreferenceValues(idleLockMinutes: 15, lockOnSleep: false, lockOnScreenLock: true,
-                                      eventRetentionDays: 90, requireBiometricOnly: true)
+                                      eventRetentionDays: 90, requireBiometricOnly: true,
+                                      appearanceTheme: .sakura, textSize: .large)
         preferences.store(stored)
         try expect(preferences.values == stored, "round-trips preference values")
+        let legacy = try JSONDecoder().decode(PreferenceValues.self, from: Data("{}".utf8))
+        try expect(legacy.appearanceTheme == .glass && legacy.textSize == .standard,
+                   "defaults appearance values when importing older configuration files")
+    }
+
+    static func testAppearanceThemeCatalog() throws {
+        let themes = OpenCloakAppearanceTheme.allCases
+        try expect(themes.count == 7, "offers the seven OpenCloak appearance themes")
+        try expect(Set(themes.map(\.rawValue)).count == 7, "appearance theme identifiers are unique")
+        try expect(themes.map(\.displayName) == ["Glass", "White", "Dark", "Bubble", "Daisies", "Night Drive", "Sakura"],
+                   "keeps the published theme names in stable order")
     }
 
     static func testConfigurationExportIsCredentialFree() throws {
@@ -339,6 +357,19 @@ struct TestRunner {
         try expectThrows("rejects passwords below the minimum") {
             _ = try OpenCloakPasswordHasher.makeRecord(password: "short")
         }
+    }
+
+    static func testCorruptCredentialRecordCannotBeReplaced() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let damaged = Data("{damaged credential".utf8)
+        try damaged.write(to: file)
+        let identity = OpenCloakIdentity(fileURL: file)
+        try expect(identity.hasPassword, "treats an existing credential record as configured even if damaged")
+        try expectThrows("does not replace a damaged credential record") {
+            _ = try identity.setPassword("new secure password")
+        }
+        try expect(try Data(contentsOf: file) == damaged, "preserves damaged credential data for recovery")
     }
 
     static func testHiddenAppPolicyBoundaries() throws {

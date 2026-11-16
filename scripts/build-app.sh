@@ -32,6 +32,20 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <key>NSHighResolutionCapable</key><true/>
 <key>NSAppleEventsUsageDescription</key><string>OpenCloak reads only the active tab URL in a supported browser when you enable a website privacy screen.</string>
 <key>NSCameraUsageDescription</key><string>OpenCloak takes an intruder photo only after a failed unlock when you turn that setting on. Photos stay on this Mac.</string>
+<key>NSServices</key><array>
+  <dict>
+    <key>NSMenuItem</key><dict><key>default</key><string>Lock with OpenCloak</string></dict>
+    <key>NSMessage</key><string>lockWithOpenCloak</string>
+    <key>NSPortName</key><string>OpenCloak</string>
+    <key>NSSendTypes</key><array><string>public.file-url</string></array>
+  </dict>
+  <dict>
+    <key>NSMenuItem</key><dict><key>default</key><string>Hide with OpenCloak</string></dict>
+    <key>NSMessage</key><string>hideWithOpenCloak</string>
+    <key>NSPortName</key><string>OpenCloak</string>
+    <key>NSSendTypes</key><array><string>public.file-url</string></array>
+  </dict>
+</array>
 <key>CFBundleDisplayName</key><string>OpenCloak</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
 <key>NSHumanReadableCopyright</key><string>Copyright © 2026 OpenCloak contributors. MIT License.</string>

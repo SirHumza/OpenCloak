@@ -83,6 +83,16 @@ struct HiddenAppsView: View {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        let receipt = url.appendingPathComponent("Contents/_MASReceipt/receipt")
+        if FileManager.default.fileExists(atPath: receipt.path) {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "This app was installed from the App Store."
+            alert.informativeText = "Moving it into an encrypted image can trigger new privacy prompts, block updates, or prevent the app from launching. OpenCloak verifies the copy and can restore it to this path, but cannot guarantee the App Store will accept a relocated app."
+            alert.addButton(withTitle: "Continue")
+            alert.addButton(withTitle: "Cancel")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
         protection.begin(.hide(url))
     }
 

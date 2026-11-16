@@ -2,6 +2,10 @@
 
 OpenCloak is an open-source macOS privacy app for encrypted file vaults and local app/website privacy screens. It uses native SwiftUI, AppKit, Keychain, LocalAuthentication, and macOS disk images. It has no account, telemetry, advertising, or required network service.
 
+## Project progress
+
+<progress value="18" max="20">18 of 20 feature areas implemented</progress> **18 of 20 feature areas implemented** (including best-effort integrations). App and website screens are privacy overlays, not OS-enforced access controls. The two unimplemented areas and platform boundaries are listed in [the feature matrix](docs/FEATURES.md).
+
 ## Build
 
 Requires macOS 12 Monterey or later and Xcode Command Line Tools. (The design spec proposed macOS 13; the UI avoids Ventura-only SwiftUI so the app can build and run on Monterey as well.) Build a universal Apple silicon + Intel app bundle with:
@@ -36,11 +40,12 @@ This needs a paid Apple Developer account and a `notarytool` keychain profile. W
 - Set up a separate OpenCloak password and one-time recovery key. Touch ID is available where macOS supports it; the Mac account password is not accepted for OpenCloak-owned protection.
 - Create, unlock, eject, import, and export AES-256 encrypted sparse-bundle vaults. Vault credentials are kept in the Keychain and protected by macOS user-presence controls.
 - Encrypt and hide application bundles, and lock individual files or folders by moving verified copies into encrypted sparse bundles. Hidden apps can be opened from their encrypted volume without restoring their original path.
+- In Finder, use Services → “Lock with OpenCloak” or “Hide with OpenCloak” on a selected file, folder, or app.
 - Add app launch privacy rules and website rules. App rules are post-launch privacy screens, not process blockers. Website rules monitor the active tab through macOS Automation in Safari, Chrome, Brave, Edge, and Vivaldi.
 - Configure app schedules and a native-looking fake-crash dialog, global shortcuts, menu-bar visibility, optional intruder photos, and relocking on sleep, screen lock, or inactivity.
 - Keep local activity history without recording filenames, vault names, URLs, or credentials.
 
-See [the feature and permission matrix](docs/FEATURES.md) for limitations. In-place Finder badges, Finder Services, Spotlight indexing controls, and website support for private windows or additional browsers are not implemented. OpenCloak does not claim system-level enforcement against an administrator or a user who disables it.
+See [the feature and permission matrix](docs/FEATURES.md) for limitations. Visible in-place folder locks with Finder badges and privileged process blocking remain unimplemented; app and website gates are best-effort overlays. OpenCloak does not claim system-level enforcement against an administrator or a user who disables it.
 
 ## Security boundary
 

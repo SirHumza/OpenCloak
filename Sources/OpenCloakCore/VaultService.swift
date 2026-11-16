@@ -295,6 +295,18 @@ public final class VaultService {
         return failures
     }
 
+    /// Removes only credentials owned by OpenCloak vaults. Call after all images are unmounted.
+    public func clearStoredCredentials() throws {
+        lock.lock(); defer { lock.unlock() }
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                                    kSecAttrService as String: Self.keychainService,
+                                    kSecUseDataProtectionKeychain as String: true]
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw VaultServiceError.keychain(status)
+        }
+    }
+
     // MARK: - Interrupted creation
 
     public func finishInterruptedCreation(_ item: VaultItem, credential provided: String? = nil) throws -> VaultItem? {

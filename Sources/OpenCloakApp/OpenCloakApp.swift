@@ -30,12 +30,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProtectionDefaults.registerDefaults()
+        NSApp.servicesProvider = self
         installStatusItem()
         installGlobalHotKeys()
         privacyCoordinator.start()
         DispatchQueue.global(qos: .utility).async { [weak protection, weak activity] in
-            let failures = protection?.relockAllMountedImages() ?? []
-            if !failures.isEmpty {
+            let imageFailures = protection?.relockAllMountedImages() ?? []
+            let vaultFailures = VaultService.shared.lockAllMounted()
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .opencloakVaultsChanged, object: nil)
+            }
+            if !imageFailures.isEmpty || !vaultFailures.isEmpty {
                 activity?.record(.privacy, .failure, "One or more protected images stayed mounted after restart")
             }
         }
@@ -164,6 +169,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         vaults.lockAll()
     }
 
+    @objc func lockWithOpenCloak(_ pasteboard: NSPasteboard,
+                                 userData: String,
+                                 error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        requestFileService(pasteboard, action: .lock)
+    }
+
+    @objc func hideWithOpenCloak(_ pasteboard: NSPasteboard,
+                                 userData: String,
+                                 error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        requestFileService(pasteboard, action: .hide)
+    }
+
+    private func requestFileService(_ pasteboard: NSPasteboard, action: FileServiceAction) {
+        guard let selected = pasteboard.readObjects(forClasses: [NSURL.self],
+                                                    options: [.urlReadingFileURLsOnly: true]) as? [URL],
+              let url = selected.first else { return }
+        guard protection.hasCompletedSetup else {
+            openMainWindow()
+            return
+        }
+        switch action {
+        case .hide: protection.begin(.hide(url))
+        case .lock: protection.begin(.lock(url))
+        }
+        openMainWindow()
+    }
+
     private func makeMainWindow() -> NSWindow {
         let content = MainView(protection: protection)
             .environmentObject(vaults)
@@ -181,6 +213,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.setFrameAutosaveName("OpenCloakMainWindow")
         return window
     }
+}
+
+private enum FileServiceAction {
+    case hide
+    case lock
 }
 
 enum Page: String, CaseIterable, Identifiable {
@@ -213,16 +250,35 @@ struct MainView: View {
     @ObservedObject var protection: ProtectionStore
     @State private var selection: Page? = .overview
     @StateObject private var rules = RuleListModel()
+    @AppStorage(OpenCloakPreferences.Key.appearanceTheme) private var appearanceTheme = OpenCloakAppearanceTheme.glass.rawValue
+    @AppStorage(OpenCloakPreferences.Key.textSize) private var textSize = OpenCloakTextSize.standard.rawValue
+
+    private var selectedTheme: OpenCloakAppearanceTheme {
+        OpenCloakAppearanceTheme(rawValue: appearanceTheme) ?? .glass
+    }
+
+    private var dynamicTypeSize: DynamicTypeSize {
+        switch OpenCloakTextSize(rawValue: textSize) ?? .standard {
+        case .small: return .small
+        case .standard: return .large
+        case .large: return .xxxLarge
+        }
+    }
 
     @ViewBuilder
     var body: some View {
-        if !protection.hasCompletedSetup {
-            SetupAssistantView(protection: protection)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .windowBackgroundColor))
-        } else {
-            dashboard
+        Group {
+            if !protection.hasCompletedSetup {
+                SetupAssistantView(protection: protection)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.opencloakBackground)
+            } else {
+                dashboard
+            }
         }
+        .tint(Color.opencloakAccent)
+        .preferredColorScheme(selectedTheme == .glass ? nil : (selectedTheme.prefersDarkAppearance ? .dark : .light))
+        .dynamicTypeSize(dynamicTypeSize)
     }
 
     private var dashboard: some View {
@@ -246,7 +302,7 @@ struct MainView: View {
             }
             .padding(28)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.opencloakBackground)
         }
         .frame(minWidth: 900, minHeight: 600)
         .alert("OpenCloak", isPresented: Binding(get: { vaults.errorMessage != nil },
@@ -366,5 +422,14 @@ struct ActivityRow: View {
 }
 
 extension Color {
-    static let opencloakAccent = Color(red: 0.16, green: 0.36, blue: 0.23)
+    static var opencloakAccent: Color {
+        let theme = OpenCloakAppearanceTheme(rawValue: UserDefaults.standard.string(forKey: OpenCloakPreferences.Key.appearanceTheme) ?? "") ?? .glass
+        return Color(red: theme.accentRGB[0], green: theme.accentRGB[1], blue: theme.accentRGB[2])
+    }
+
+    static var opencloakBackground: Color {
+        let theme = OpenCloakAppearanceTheme(rawValue: UserDefaults.standard.string(forKey: OpenCloakPreferences.Key.appearanceTheme) ?? "") ?? .glass
+        guard let rgb = theme.backgroundRGB else { return Color(nsColor: .windowBackgroundColor) }
+        return Color(red: rgb[0], green: rgb[1], blue: rgb[2])
+    }
 }

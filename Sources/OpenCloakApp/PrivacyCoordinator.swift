@@ -367,10 +367,6 @@ final class PrivacyCoordinator {
 
     private func checkIdle() {
         let minutes = preferences.values.idleLockMinutes
-        guard minutes > 0 else {
-            idleLocked = false
-            return
-        }
         let idleSeconds = [CGEventType.mouseMoved, .leftMouseDown, .keyDown, .scrollWheel]
             .map { CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: $0) }
             .min() ?? 0
@@ -462,6 +458,7 @@ final class PrivacyCoordinator {
     }
 
     private func resetUnlock() {
+        allowances.removeAll()
         unlockedRuleID = nil
         lastWebsiteKey = nil
         hidePanel()

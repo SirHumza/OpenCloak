@@ -279,7 +279,7 @@ public final class OpenCloakIdentity {
     }
 
     public var hasPassword: Bool {
-        (try? record()) != nil
+        FileManager.default.fileExists(atPath: fileURL.path)
     }
 
     public func record() throws -> OpenCloakPasswordRecord? {
@@ -298,7 +298,10 @@ public final class OpenCloakIdentity {
     @discardableResult
     public func setPassword(_ password: String, preservingMasterKey: Data? = nil) throws -> String {
         lock.lock(); defer { lock.unlock() }
+        let fileExists = FileManager.default.fileExists(atPath: fileURL.path)
+        guard !fileExists || preservingMasterKey != nil else { throw OpenCloakCredentialError.persistence }
         let oldData = try? Data(contentsOf: fileURL)
+        guard !fileExists || oldData != nil else { throw OpenCloakCredentialError.persistence }
         let record = try OpenCloakPasswordHasher.makeRecord(password: password, masterKey: preservingMasterKey)
         guard let master = OpenCloakPasswordHasher.masterKey(password: password, record: record) else {
             throw OpenCloakCredentialError.persistence

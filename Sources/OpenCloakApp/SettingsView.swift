@@ -17,6 +17,8 @@ struct SettingsView: View {
     @AppStorage(ProtectionDefaults.requireQuitAuthentication) private var requireQuitAuthentication = true
     @AppStorage(ProtectionDefaults.startAtLogin) private var startAtLogin = false
     @AppStorage(ProtectionDefaults.hideMenuBarIcon) private var hideMenuBarIcon = false
+    @AppStorage(OpenCloakPreferences.Key.appearanceTheme) private var appearanceTheme = OpenCloakAppearanceTheme.glass.rawValue
+    @AppStorage(OpenCloakPreferences.Key.textSize) private var textSize = OpenCloakTextSize.standard.rawValue
 
     @State private var confirmingClear = false
     @State private var exportError: String?
@@ -24,11 +26,32 @@ struct SettingsView: View {
     @State private var repeatedPassword = ""
     @State private var currentPassword = ""
     @State private var passwordMessage: String?
+    @State private var preparingUninstall = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 PageHeader(title: "Settings", subtitle: "OpenCloak keeps vault data and history on this Mac")
+
+                GroupBox("Appearance") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Picker("Theme", selection: $appearanceTheme) {
+                            ForEach(OpenCloakAppearanceTheme.allCases, id: \.rawValue) { theme in
+                                Text(theme.displayName).tag(theme.rawValue)
+                            }
+                        }
+                        Picker("Text size", selection: $textSize) {
+                            ForEach(OpenCloakTextSize.allCases, id: \.rawValue) { size in
+                                Text(size.displayName).tag(size.rawValue)
+                            }
+                        }
+                        Text("Glass follows macOS. The other themes set a coordinated accent and window appearance.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 4)
+                }
 
                 GroupBox("OpenCloak password") {
                     VStack(alignment: .leading, spacing: 10) {
@@ -66,7 +89,7 @@ struct SettingsView: View {
                             Text(passwordMessage).font(.caption).foregroundStyle(.orange)
                         }
                         if let recoveryKey = protection.setupRecoveryKey {
-                            Text("Save this new recovery key. It replaces the previous key.")
+                            Text("This is your recovery key. It remains valid if you change your OpenCloak password.")
                                 .font(.caption.weight(.medium))
                             Text(recoveryKey)
                                 .font(.system(.caption, design: .monospaced))
@@ -76,7 +99,7 @@ struct SettingsView: View {
                                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
                             Button("I saved the recovery key") { protection.setupRecoveryKey = nil }
                         }
-                        Text("At least \(OpenCloakPasswordHasher.minimumCharacters) characters. Unhiding every app and unlocking every file is required before a password change, because those images use the current key.")
+                        Text("At least \(OpenCloakPasswordHasher.minimumCharacters) characters. Changing your password preserves the encryption key, so protected items stay accessible with the same recovery key.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -122,10 +145,9 @@ struct SettingsView: View {
 
                 GroupBox("Automatic locking") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Picker("Lock mounted vaults after inactivity", selection: $idleLockMinutes) {
+                        Picker("Lock protected items after inactivity", selection: $idleLockMinutes) {
                             ForEach(PreferenceValues.idleChoices, id: \.self) { minutes in
-                                Text(minutes == 0 ? "Never" : "\(minutes) minute\(minutes == 1 ? "" : "s")")
-                                    .tag(minutes)
+                                Text("\(minutes) minute\(minutes == 1 ? "" : "s")").tag(minutes)
                             }
                         }
                         Toggle("Lock when the Mac sleeps", isOn: $lockOnSleep)
@@ -186,15 +208,30 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                 }
 
-                GroupBox("About") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("OpenCloak 0.2.0 · MIT License")
-                        Text("OpenCloak is a consumer privacy utility, not an endpoint-security product. It does not stop an administrator, root, malware running as you, or anyone holding an unlocked Mac with OpenCloak disabled.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 20) {
+                    GroupBox("Uninstall") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Prepare OpenCloak for removal. You can leave encrypted items and recovery data in place, or delete OpenCloak's local data after mounted images are safely closed.")
+                                .foregroundStyle(.secondary)
+                            Button(preparingUninstall ? "Closing protected images…" : "Prepare to uninstall…") {
+                                confirmUninstall()
+                            }
+                            .disabled(preparingUninstall)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
+
+                    GroupBox("About") {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("OpenCloak 0.2.0 · MIT License")
+                            Text("OpenCloak is a consumer privacy utility, not an endpoint-security product. It does not stop an administrator, root, malware running as you, or anyone holding an unlocked Mac with OpenCloak disabled.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -254,5 +291,82 @@ struct SettingsView: View {
         } catch {
             exportError = "Could not import this configuration. No credentials or vault data were changed. \(error.localizedDescription)"
         }
+    }
+
+    private func confirmUninstall() {
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "Prepare to remove OpenCloak?"
+        alert.informativeText = "This disables OpenCloak's login agent. You must move OpenCloak.app to the Trash yourself. Deleting local data removes encrypted vaults, hidden apps, locked files, settings, and intruder photos."
+        alert.addButton(withTitle: "Leave Encrypted Data")
+        alert.addButton(withTitle: "Delete Local Data…")
+        alert.addButton(withTitle: "Cancel")
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            prepareForUninstall(eraseData: false)
+        case .alertSecondButtonReturn:
+            confirmEraseData()
+        default:
+            break
+        }
+    }
+
+    private func confirmEraseData() {
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "Delete OpenCloak's local data?"
+        alert.informativeText = "Any files and apps stored only in OpenCloak's encrypted images will be lost. This deletes local files but cannot guarantee secure overwriting of APFS/SSD blocks or copies in backups and snapshots. Continue only after restoring or backing up anything you need."
+        alert.addButton(withTitle: "Delete Local Data")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn { prepareForUninstall(eraseData: true) }
+    }
+
+    private func prepareForUninstall(eraseData: Bool) {
+        guard !preparingUninstall else { return }
+        preparingUninstall = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let vaultService = VaultService.shared
+                let vaultFailures = vaultService.lockAllMounted()
+                let imageFailures = ProtectionStore.shared.relockAllMountedImages()
+                guard vaultFailures.isEmpty && imageFailures.isEmpty else {
+                    throw UninstallPreparationError.mountedImages
+                }
+                try LoginAgent.setEnabled(false)
+                if eraseData {
+                    try vaultService.clearStoredCredentials()
+                    OpenCloakDeviceKey.clear()
+                    let dataRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                        .appendingPathComponent("OpenCloak", isDirectory: true)
+                    if FileManager.default.fileExists(atPath: dataRoot.path) {
+                        try FileManager.default.removeItem(at: dataRoot)
+                    }
+                    if let bundleIdentifier = Bundle.main.bundleIdentifier {
+                        UserDefaults.standard.removePersistentDomain(forName: bundleIdentifier)
+                    }
+                }
+                DispatchQueue.main.async {
+                    preparingUninstall = false
+                    let done = NSAlert()
+                    done.messageText = "OpenCloak is ready to remove."
+                    done.informativeText = "Quit OpenCloak, then move OpenCloak.app to the Trash."
+                    done.runModal()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    preparingUninstall = false
+                    let failed = NSAlert(error: error)
+                    failed.runModal()
+                }
+            }
+        }
+    }
+}
+
+private enum UninstallPreparationError: LocalizedError {
+    case mountedImages
+
+    var errorDescription: String? {
+        "OpenCloak could not close every protected disk image. Nothing was erased or removed. Close files in mounted images and retry."
     }
 }
